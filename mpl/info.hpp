@@ -1,3 +1,5 @@
+#include <mpi.h>
+#include <cstring>
 #if !(defined MPL_INFO_HPP)
 
 #define MPL_INFO_HPP
@@ -10,6 +12,7 @@ namespace mpl {
 
   namespace impl {
     class base_communicator;
+    class port;
   }
 
   /// Stores key-value pairs to affect specific as well as implementation defined MPI
@@ -134,6 +137,7 @@ namespace mpl {
     friend class impl::base_communicator;
     friend class communicator;
     friend class file;
+    friend class port;
   };
 
 
@@ -175,6 +179,47 @@ namespace mpl {
     using base::push_back;
   };
 
+  /// Stores key-value pairs to affect specific as well as implementation defined MPI
+  /// functionalities.
+  class port {
+    mutable std::string portname_;
+    mutable info info_;
+
+  public:
+    /// Creates a new port object
+    port() = default;
+
+    port(info& info): info_(info) {}
+
+    ~port() {
+      if (!portname_.empty())
+        close();
+    }
+
+    bool close() {
+      bool result = MPI_Close_port(portname_.c_str());
+      return result;
+    }
+
+    std::string name() const { return portname_;}
+
+    int open() {
+      char portname[MPI_MAX_PORT_NAME + 1];
+      int result = MPI_Open_port(info_.info_, portname);
+      portname_ = std::string(portname);
+      return result;
+    }
+
+    void publish_name(std::string name) {
+      MPI_Publish_name(name.c_str(), info_.info_, portname_.c_str());
+    }
+
+    void lookup_name(std::string name) {
+      char portname[MPI_MAX_PORT_NAME + 1];
+      MPI_Lookup_name(name.c_str(), info_.info_, portname);
+      portname_ = std::string(portname);
+    }
+  };
 }  // namespace mpl
 
 #endif  // MPL_INFO_HPP
