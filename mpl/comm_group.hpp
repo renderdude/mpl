@@ -4936,6 +4936,9 @@ namespace mpl {
     /// overload) by all processes in the communicator.
     [[nodiscard]] inter_communicator spawn_multiple(int root_rank) const;
 
+    inter_communicator accept(std::string portname, class info info, int root) const;
+    inter_communicator connect(std::string portname, class info info, int root) const;
+
     friend class group;
 
     friend class cartesian_communicator;
@@ -5306,6 +5309,18 @@ namespace mpl {
                             &comm, MPI_ERRCODES_IGNORE);
     return inter_communicator{comm};
   }
+
+    inter_communicator communicator::accept(std::string portname, class info info, int root) const {
+      MPI_Comm comm;
+      MPI_Comm_accept(portname.c_str(), info.info_, root, comm_, &comm);
+      return inter_communicator{comm};
+    }
+
+    inter_communicator communicator::connect(std::string portname, class info info, int root) const {
+      MPI_Comm comm;
+      MPI_Comm_connect(portname.c_str(), info.info_, root, comm_, &comm);
+      return inter_communicator{comm};
+    }
 
   //--------------------------------------------------------------------
 
